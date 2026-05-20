@@ -32,11 +32,21 @@ trap cleanup SIGINT SIGTERM
 
 # Create environment files if they don't exist
 if [ ! -f "frontend/.env" ]; then
+    if [ ! -f "frontend/.env.example" ]; then
+        echo -e "${RED}❌ Error: frontend/.env.example not found${NC}"
+        echo -e "${YELLOW}Please create frontend/.env.example first${NC}"
+        exit 1
+    fi
     echo -e "${BLUE}📝 Creating frontend .env file...${NC}"
     cp frontend/.env.example frontend/.env
 fi
 
 if [ ! -f "python_backend/.env" ]; then
+    if [ ! -f "python_backend/.env.example" ]; then
+        echo -e "${RED}❌ Error: python_backend/.env.example not found${NC}"
+        echo -e "${YELLOW}Please create python_backend/.env.example first${NC}"
+        exit 1
+    fi
     echo -e "${BLUE}📝 Creating backend .env file...${NC}"
     cp python_backend/.env.example python_backend/.env
 fi
