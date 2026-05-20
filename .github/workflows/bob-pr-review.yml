@@ -62,16 +62,7 @@ jobs:
             --auth-method api-key
             --chat-mode ask
             --hide-intermediary-output
-            -p "Review @artifacts/review-context.md for this pull request. Inspect changed files in the workspace only if needed.
-
-CRITICAL: You MUST return ONLY valid JSON wrapped in <bob-review></bob-review> tags. No other text before or after the tags.
-
-Required format:
-<bob-review>
-{\"summary\":\"string\",\"overall\":\"no_issues|issues_found|needs_human_review\",\"findings\":[{\"path\":\"string\",\"line\":123,\"severity\":\"low|medium|high\",\"title\":\"string\",\"body\":\"markdown string\"}]}
-</bob-review>
-
-Rules: Focus on bugs, security, risky logic, and maintainability issues. Ignore style nits. Only report issues that are evidenced by the current diff. Only use line numbers from the PR head side. Keep findings concise and actionable. Return an empty findings array when there are no actionable issues. DO NOT return plain text - ONLY the JSON format above."
+            -p "Review @artifacts/review-context.md for this pull request. Inspect changed files in the workspace only if needed. CRITICAL: You MUST return ONLY valid JSON wrapped in <bob-review></bob-review> tags. No other text before or after the tags. Required format: <bob-review>{\"summary\":\"string\",\"overall\":\"no_issues|issues_found|needs_human_review\",\"findings\":[{\"path\":\"string\",\"line\":123,\"severity\":\"low|medium|high\",\"title\":\"string\",\"body\":\"markdown string\"}]}</bob-review> Rules: Focus on bugs, security, risky logic, and maintainability issues. Ignore style nits. Only report issues that are evidenced by the current diff. Only use line numbers from the PR head side. Keep findings concise and actionable. Return an empty findings array when there are no actionable issues. DO NOT return plain text - ONLY the JSON format above."
           )
           if [ -n "${BOBSHELL_INSTANCE_ID}" ]; then
             bob_args+=(--instance-id "${BOBSHELL_INSTANCE_ID}")
