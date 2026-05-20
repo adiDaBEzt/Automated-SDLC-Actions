@@ -43,6 +43,9 @@ Thumbs.db
 *.log
 logs/
 
+# Process ID files
+*.pid
+
 # Build artifacts
 *.pyc
 *.pyo
