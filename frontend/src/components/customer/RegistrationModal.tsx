@@ -25,6 +25,7 @@ export default function RegistrationModal({ trigger, onSuccess }: RegistrationMo
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const registerUser = useRegisterUser();
@@ -44,11 +45,17 @@ export default function RegistrationModal({ trigger, onSuccess }: RegistrationMo
       return;
     }
 
+    if (phone.length < 10) {
+      setError('Phone number must be at least 10 digits');
+      return;
+    }
+
     try {
-      await registerUser.mutateAsync({ name, email });
+      await registerUser.mutateAsync({ name, email, phone });
       setOpen(false);
       setName('');
       setEmail('');
+      setPhone('');
       if (onSuccess) {
         onSuccess();
       } else {
@@ -98,6 +105,19 @@ export default function RegistrationModal({ trigger, onSuccess }: RegistrationMo
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="john@example.com"
                 required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+1234567890"
+                required
+                minLength={10}
+                maxLength={15}
               />
             </div>
             {error && (

@@ -42,7 +42,7 @@ def setup_database():
 def sample_user():
     """Create a sample user for testing"""
     db = TestingSessionLocal()
-    user = User(name="Test User", email="test@example.com")
+    user = User(name="Test User", email="test@example.com", phone="+1234567890")
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -88,12 +88,13 @@ class TestUserRegistration:
         """Test successful user registration"""
         response = client.post(
             "/register",
-            json={"name": "John Doe", "email": "john@example.com"}
+            json={"name": "John Doe", "email": "john@example.com", "phone": "+1234567890"}
         )
         assert response.status_code == 200
         data = response.json()
         assert data["name"] == "John Doe"
         assert data["email"] == "john@example.com"
+        assert data["phone"] == "+1234567890"
         assert "id" in data
     
     def test_register_duplicate_email(self):
@@ -101,13 +102,13 @@ class TestUserRegistration:
         # First registration
         client.post(
             "/register",
-            json={"name": "John Doe", "email": "john@example.com"}
+            json={"name": "John Doe", "email": "john@example.com", "phone": "+1234567890"}
         )
         
         # Second registration with same email
         response = client.post(
             "/register",
-            json={"name": "Jane Doe", "email": "john@example.com"}
+            json={"name": "Jane Doe", "email": "john@example.com", "phone": "+0987654321"}
         )
         assert response.status_code == 200
         data = response.json()
@@ -118,7 +119,15 @@ class TestUserRegistration:
         """Test registration with invalid email format"""
         response = client.post(
             "/register",
-            json={"name": "John Doe", "email": "invalid-email"}
+            json={"name": "John Doe", "email": "invalid-email", "phone": "+1234567890"}
+        )
+        assert response.status_code == 422  # Validation error
+    
+    def test_register_invalid_phone(self):
+        """Test registration with invalid phone number (too short)"""
+        response = client.post(
+            "/register",
+            json={"name": "John Doe", "email": "john@example.com", "phone": "123"}
         )
         assert response.status_code == 422  # Validation error
 
