@@ -1,100 +1,91 @@
-name: Bob PR Review
+name: 🤖 Bob Review
 
-"on":
+on:
   pull_request:
-    types:
-      - opened
-      - synchronize
-      - reopened
-
-permissions:
-  contents: read
-  pull-requests: write
-
-concurrency:
-  group: bob-pr-review-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+    types: [opened, synchronize, reopened]
 
 jobs:
   review:
-    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+    name: Bob reviews this PR
+    # Skip draft PRs and bot-authored PRs to avoid loops
+    if: >
+      github.event.pull_request.draft == false &&
+      !endsWith(github.event.pull_request.user.login, '[bot]')
     runs-on: ubuntu-latest
-    env:
-        BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        BOB_REVIEW_MAX_FILES: "25"
-        BOB_REVIEW_MAX_INLINE_COMMENTS: "10"
-        BOB_REVIEW_MAX_PATCH_CHARS: "120000"
-        BOB_REVIEW_MAX_FILE_CHARS: "12000"
-        BOB_REVIEW_CONTEXT_FILE_LIMIT: "8"
-        BOBSHELL_INSTANCE_ID: ${{ vars.BOBSHELL_INSTANCE_ID }}
-        BOBSHELL_TEAM_ID: ${{ vars.BOBSHELL_TEAM_ID }}
-
+    timeout-minutes: 10
+    permissions:
+      pull-requests: write
+      contents: read
+    
     steps:
-      - name: Check out PR head
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 0
+          fetch-depth: 0  # Need full history for gh pr diff to resolve merge base
 
-      - name: Set up Node.js 22
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
-
-      - name: Build Bob review context
-        run: node scripts/build-review-context.mjs
+          node-version: '22'
 
       - name: Install Bob Shell
-        env:
-          CI: "true"
         run: curl -fsSL https://bob.ibm.com/download/bobshell.sh | bash -s -- --pm npm
 
-      - name: Run Bob review
-        id: bob_review
+      - name: Fetch PR diff
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr diff ${{ github.event.pull_request.number }} > pr.diff
+
+      - name: Run Bob Shell review
         env:
           BOBSHELL_API_KEY: ${{ secrets.BOBSHELL_API_KEY }}
         run: |
-          set +e
-          mkdir -p artifacts
-          bob_args=(
-            --accept-license
-            --auth-method api-key
-            --chat-mode ask
-            --hide-intermediary-output
-            -p "Review @artifacts/review-context.md for this pull request. Inspect changed files in the workspace only if needed. Return ONLY valid JSON wrapped exactly in <bob-review> and </bob-review> tags with this schema: {\"summary\":\"string\",\"overall\":\"no_issues|issues_found|needs_human_review\",\"findings\":[{\"path\":\"string\",\"line\":123,\"severity\":\"low|medium|high\",\"title\":\"string\",\"body\":\"markdown string\"}]}. Rules: Focus on bugs, security, risky logic, and maintainability issues. Ignore style nits. Only report issues that are evidenced by the current diff. Only use line numbers from the PR head side. Keep findings concise and actionable. Return an empty findings array when there are no actionable issues."
-          )
-          if [ -n "${BOBSHELL_INSTANCE_ID}" ]; then
-            bob_args+=(--instance-id "${BOBSHELL_INSTANCE_ID}")
-          fi
-          if [ -n "${BOBSHELL_TEAM_ID}" ]; then
-            bob_args+=(--team-id "${BOBSHELL_TEAM_ID}")
-          fi
-          bob "${bob_args[@]}" > artifacts/bob-review-output.txt 2> artifacts/bob-review-error.txt
-          status=$?
-          echo "exit_code=${status}" >> "${GITHUB_OUTPUT}"
-          exit 0
+          bob --accept-license --auth-method api-key -p "$(cat <<'EOF'
+          You are reviewing a pull request on this repository, non-interactively, in CI.
+          Read the README.md first to understand this repo's patterns and constraints.
+          The PR diff is in the file pr.diff. Read it using the read_file tool with path="pr.diff".
 
-      - name: Debug Bob output
-        if: always()
+          Then PRINT your code review to stdout — do NOT call write_to_file or any file-writing tool. Bracket the review with these two marker lines exactly, each on its own line:
+
+          <<<BOB_REVIEW_BEGIN_8f3a2b1c>>>
+          ...your review markdown...
+          <<<BOB_REVIEW_END_8f3a2b1c>>>
+
+          The review must contain:
+          - A 1-2 sentence summary at the top.
+          - A "Findings" section with the issues you'd raise, each with a file:line reference and a short suggestion. Group by severity (blocker / nit / question).
+          - If the diff looks fine, say so plainly. Do not invent issues.
+          - Be specific. Do not restate what the diff already shows.
+          - Do not approve or block the PR — you are leaving a comment, not a verdict.
+
+          Do not modify any source files. Do not run the test suite. Do not write any files.
+          EOF
+          )" 2>&1 | tee bob_output.txt
+
+      - name: Extract review from Bob's stdout
         run: |
-          echo "=== STDOUT ==="
-          cat artifacts/bob-review-output.txt || true
-          echo
-          echo "=== STDERR ==="
-          cat artifacts/bob-review-error.txt || true
+          awk '/^<<<BOB_REVIEW_BEGIN_8f3a2b1c>>>$/{flag=1; next} /^<<<BOB_REVIEW_END_8f3a2b1c>>>$/{flag=0} flag' bob_output.txt > review_body.md
+          if [ ! -s review_body.md ]; then
+            echo "ERROR: review markers not found in Bob's output"
+            echo "--- Bob output ---"
+            cat bob_output.txt
+            exit 1
+          fi
+          {
+            echo "## 🤖 Bob's Review"
+            echo ""
+            echo "*Posted by [Bob Shell](https://bob.ibm.com), IBM's CLI agent — running headless on GitHub Actions.*"
+            echo ""
+            echo "---"
+            echo ""
+            cat review_body.md
+          } > review.md
+          echo "--- Final review ---"
+          cat review.md
 
-      - name: Publish Bob review
-        if: always()
+      - name: Post review comment
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BOB_EXIT_CODE: ${{ steps.bob_review.outputs.exit_code || '1' }}
-        run: node scripts/publish-bob-review.mjs
-
-      - name: Fail on Bob execution error
-        if: always() && steps.bob_review.outputs.exit_code != '0'
-        run: |
-          echo "Bob review failed with exit code ${{ steps.bob_review.outputs.exit_code }}"
-          exit 1
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr review ${{ github.event.pull_request.number }} --comment --body-file review.md
 
 # Made with Bob
