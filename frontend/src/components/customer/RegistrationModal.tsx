@@ -25,6 +25,7 @@ export default function RegistrationModal({ trigger, onSuccess }: RegistrationMo
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const registerUser = useRegisterUser();
@@ -45,10 +46,11 @@ export default function RegistrationModal({ trigger, onSuccess }: RegistrationMo
     }
 
     try {
-      await registerUser.mutateAsync({ name, email });
+      await registerUser.mutateAsync({ name, email, phone: phone || undefined });
       setOpen(false);
       setName('');
       setEmail('');
+      setPhone('');
       if (onSuccess) {
         onSuccess();
       } else {
@@ -99,6 +101,17 @@ export default function RegistrationModal({ trigger, onSuccess }: RegistrationMo
                 placeholder="john@example.com"
                 required
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone Number (Optional)</Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+1234567890"
+              />
+              <p className="text-xs text-gray-400">For booking updates and notifications</p>
             </div>
             {error && (
               <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30">

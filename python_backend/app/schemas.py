@@ -10,6 +10,7 @@ class UserCreate(BaseModel):
     """Schema for user registration"""
     name: str = Field(..., min_length=1, description="User's full name")
     email: EmailStr = Field(..., description="User's email address")
+    phone: Optional[str] = Field(None, description="User's phone number (optional)")
 
 
 class UserResponse(BaseModel):
@@ -17,6 +18,7 @@ class UserResponse(BaseModel):
     id: int
     name: str
     email: str
+    phone: Optional[str] = None
 
 
 class UserIdRequest(BaseModel):

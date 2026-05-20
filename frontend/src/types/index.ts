@@ -3,6 +3,7 @@ export interface User {
   id: number;
   name: string;
   email: string;
+  phone?: string;
 }
 
 // Flight types
@@ -33,6 +34,7 @@ export interface Booking {
 export interface RegisterUserRequest {
   name: string;
   email: string;
+  phone?: string;
 }
 
 export interface CreateBookingRequest {
