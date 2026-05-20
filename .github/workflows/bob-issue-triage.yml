@@ -23,7 +23,11 @@ jobs:
           node-version: '22'
 
       - name: Install Bob Shell
-        run: curl -fsSL https://bob.ibm.com/download/bobshell.sh | bash -s -- --pm npm
+        env:
+          CI: "true"
+        run: |
+          curl -fsSL https://bob.ibm.com/download/bobshell.sh | bash -s -- --pm npm
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Get issue details
         id: issue
