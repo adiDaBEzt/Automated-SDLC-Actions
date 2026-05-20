@@ -1,6 +1,6 @@
 # Automated SDLC with Galaxium Travels
 
-This repository demonstrates an automated Software Development Life Cycle (SDLC) using GitHub Actions and Bob AI.
+This repository demonstrates an automated Software Development Life Cycle (SDLC) using GitHub Actions and Bob AI for code reviews and issue triage.
 
 ## Project Structure
 
