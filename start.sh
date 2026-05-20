@@ -30,6 +30,17 @@ cleanup() {
 # Set up trap to catch Ctrl+C and other termination signals
 trap cleanup SIGINT SIGTERM
 
+# Create environment files if they don't exist
+if [ ! -f "frontend/.env" ]; then
+    echo -e "${BLUE}📝 Creating frontend .env file...${NC}"
+    cp frontend/.env.example frontend/.env
+fi
+
+if [ ! -f "python_backend/.env" ]; then
+    echo -e "${BLUE}📝 Creating backend .env file...${NC}"
+    cp python_backend/.env.example python_backend/.env
+fi
+
 # Check if venv exists
 if [ ! -d "venv" ]; then
     echo -e "${YELLOW}⚠️  Virtual environment not found. Creating one...${NC}"
@@ -45,7 +56,7 @@ cd python_backend
 
 # Install backend dependencies
 echo -e "${BLUE}📥 Installing backend dependencies...${NC}"
-pip install -q -r requirements.txt
+python -m pip install -q -r requirements.txt
 
 # Seed database with demo data
 echo -e "${BLUE}🌱 Seeding database with demo data...${NC}"
