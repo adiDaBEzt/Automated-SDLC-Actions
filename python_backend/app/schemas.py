@@ -1,15 +1,29 @@
 """
 Pydantic schemas for request/response validation
 """
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Literal, Union, Optional
 from datetime import datetime
+import re
 
 
 class UserCreate(BaseModel):
     """Schema for user registration"""
     name: str = Field(..., min_length=1, description="User's full name")
     email: EmailStr = Field(..., description="User's email address")
+    phone: Optional[str] = Field(None, description="User's phone number (optional)")
+    
+    @field_validator('phone')
+    @classmethod
+    def validate_phone(cls, v):
+        if v is None or v == "":
+            return None
+        # Strip all non-digit characters
+        digits_only = re.sub(r'\D', '', v)
+        # Validate length (10-15 digits)
+        if len(digits_only) < 10 or len(digits_only) > 15:
+            raise ValueError('Phone number must be 10-15 digits')
+        return digits_only
 
 
 class UserResponse(BaseModel):
@@ -17,6 +31,7 @@ class UserResponse(BaseModel):
     id: int
     name: str
     email: str
+    phone: Optional[str] = None
 
 
 class UserIdRequest(BaseModel):

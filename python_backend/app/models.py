@@ -15,6 +15,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False, index=True)
+    phone = Column(String(20), nullable=True)
 
     # Relationship
     bookings = relationship("Booking", back_populates="user")
@@ -24,7 +25,8 @@ class User(Base):
         return {
             "id": self.id,
             "name": self.name,
-            "email": self.email
+            "email": self.email,
+            "phone": self.phone
         }
 
 

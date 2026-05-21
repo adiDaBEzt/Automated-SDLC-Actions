@@ -52,6 +52,7 @@ async def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
     
     - **name**: User's full name (required)
     - **email**: User's email address (required, must be unique)
+    - **phone**: User's phone number (optional, 10-15 digits)
     """
     # Check if email already exists
     existing_user = db.query(User).filter(User.email == user_data.email).first()
@@ -67,7 +68,8 @@ async def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
         # Create new user
         new_user = User(
             name=user_data.name,
-            email=user_data.email
+            email=user_data.email,
+            phone=user_data.phone
         )
         db.add(new_user)
         db.commit()
