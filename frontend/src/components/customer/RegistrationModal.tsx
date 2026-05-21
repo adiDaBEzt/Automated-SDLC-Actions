@@ -25,9 +25,16 @@ export default function RegistrationModal({ trigger, onSuccess }: RegistrationMo
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const registerUser = useRegisterUser();
+
+  const isValidPhone = (phone: string): boolean => {
+    if (!phone) return true; // Optional field
+    const digitsOnly = phone.replace(/\D/g, '');
+    return digitsOnly.length >= 10 && digitsOnly.length <= 15;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,11 +51,17 @@ export default function RegistrationModal({ trigger, onSuccess }: RegistrationMo
       return;
     }
 
+    if (phone && !isValidPhone(phone)) {
+      setError('Please enter a valid phone number (10-15 digits)');
+      return;
+    }
+
     try {
-      await registerUser.mutateAsync({ name, email });
+      await registerUser.mutateAsync({ name, email, phone: phone || undefined });
       setOpen(false);
       setName('');
       setEmail('');
+      setPhone('');
       if (onSuccess) {
         onSuccess();
       } else {
@@ -99,6 +112,19 @@ export default function RegistrationModal({ trigger, onSuccess }: RegistrationMo
                 placeholder="john@example.com"
                 required
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone Number (Optional)</Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="(123) 456-7890"
+              />
+              <p className="text-xs text-gray-400">
+                For booking updates and notifications
+              </p>
             </div>
             {error && (
               <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30">
